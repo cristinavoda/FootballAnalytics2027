@@ -1,10 +1,13 @@
+
 # Python
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Secretos
+# Variables y secretos
 .env
 .env.*
 !.env.example
@@ -15,7 +18,42 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Datos y resultados
-artifacts/*
-!artifacts/**/*.py
-!artifacts/*.py
+# Datos originales del partido
+data/
+dataset/
+datasets/
+tracking/
+*.npz
+*.parquet
+
+# Datos externos y referencias descargadas
+external_data/
+official_reference/
+
+# Resultados de evaluación
+evaluation/results/
+evaluation/baseline_evaluation/
+evaluation/baseline_bootstrap/
+
+# Datos derivados del partido
+artifacts/derived/
+artifacts/diagnostics/
+artifacts/tracking_atd.npz
+artifacts/tracking_preview.csv
+artifacts/tracking_quality_by_track.csv
+artifacts/tracking_quality_by_frame.csv
+artifacts/homography_quality_summary.csv
+artifacts/homography_quality_by_frame.csv
+artifacts/geometry_basic_features.csv
+artifacts/possession_features.csv
+artifacts/possession_features_v2.csv
+artifacts/temporal_features_v1.csv
+artifacts/predictions_tech_cia_v1.csv
+
+# Datos externos y modelos pendientes de autorización
+artifacts/skillcorner/
+artifacts/metrica_transfer/
+
+# Archivos temporales
+*.log
+*.tmp
