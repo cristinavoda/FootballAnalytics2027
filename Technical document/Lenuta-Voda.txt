@@ -1,0 +1,239 @@
+# Lenuta Voda
+## Estimación de posesión de equipo mediante análisis espacial, dinámico y transferencia de conocimiento
+
+**More Than A Hack 2027 · Metrica Sports**  
+**Equipo registrado:** Lenuta Voda  
+**Proyecto:** TECH-CIA
+
+---
+
+## 1. Resumen ejecutivo
+
+TECH-CIA es un proyecto de análisis avanzado de fútbol orientado a estimar la posesión de equipo a nivel de frame a partir de datos de tracking.
+
+El objetivo es identificar si la posesión corresponde al equipo local, al visitante o si existe una situación de disputa o ambigüedad que impide asignarla con suficiente confianza.
+
+La solución explora un enfoque híbrido que integra tres fuentes principales de información:
+
+- Geometría espacial y relacional de ambos equipos.
+- Dinámica colectiva y patrones de movimiento.
+- Probabilidades procedentes de un modelo entrenado con datos externos de tracking de fútbol.
+
+El sistema combina estas señales mediante transformaciones estadísticas robustas, fusión ponderada y suavizado temporal.
+
+El resultado es una clasificación secuencial que busca aprovechar no solo la proximidad individual al balón, sino también la organización y el comportamiento colectivo de los equipos.
+
+## 2. Objetivos y planteamiento
+
+La posesión no siempre puede determinarse mediante la distancia entre el balón y el jugador más cercano. Durante un partido aparecen situaciones de presión, disputas, transiciones rápidas, balones divididos y periodos de visibilidad limitada.
+
+Por este motivo, TECH-CIA aborda el problema desde una perspectiva colectiva y contextual.
+
+Los objetivos principales son:
+
+1. Analizar la distribución espacial de los jugadores de ambos equipos.
+2. Extraer características que representen ventajas posicionales y dinámicas.
+3. Investigar la transferencia de patrones aprendidos en conjuntos de datos externos.
+4. Combinar señales heterogéneas en un indicador común.
+5. Obtener una predicción por frame, manteniendo la continuidad temporal.
+6. Generar un archivo compatible con el formato de entrega de la competición.
+
+## 3. Desarrollo metodológico
+
+### 3.1. Ingeniería de características espaciales
+
+Una parte central del trabajo ha consistido en desarrollar características que describan la relación entre los dos equipos y el balón.
+
+Se han explorado distintas dimensiones:
+
+- Posición relativa de los equipos.
+- Distancias de los jugadores al balón.
+- Proximidad colectiva en diferentes radios.
+- Posición de los centroides.
+- Distribución y dispersión espacial.
+- Ventajas relativas de proximidad y densidad.
+
+El desarrollo incluye varias iteraciones de construcción y auditoría de características, con versiones dedicadas a la dinámica de equipo y a la geometría relacional.
+
+Esta evolución permitió ampliar el análisis desde las distancias individuales hacia indicadores que representan el comportamiento colectivo.
+
+### 3.2. Dinámica colectiva y temporal
+
+El sistema incorpora señales relacionadas con el movimiento de los equipos:
+
+- Número de jugadores próximos al balón.
+- Diferencias de proximidad entre ambos equipos.
+- Velocidades colectivas.
+- Tendencias de movimiento hacia el balón.
+- Medias temporales de determinadas características.
+
+La incorporación de información temporal permite analizar la persistencia de ciertos patrones y reducir la dependencia de observaciones aisladas.
+
+### 3.3. Geometría relacional
+
+Se desarrolló un bloque específico de geometría relacional para estudiar las ventajas espaciales entre ambos equipos.
+
+Entre las características utilizadas en la versión final se encuentran:
+
+- Ventaja de proximidad al balón.
+- Ventaja de proximidad de los centroides.
+- Diferencias de distancia media.
+- Márgenes de jugadores próximos en distintos radios.
+- Diferencias de densidad espacial.
+
+Este bloque aporta una representación complementaria a las probabilidades del modelo externo y a las señales de movimiento.
+
+## 4. Transferencia de conocimiento mediante datos externos
+
+TECH-CIA explora el uso de datos externos de tracking para incorporar información adicional al análisis del partido de competición.
+
+Se desarrolló un proceso de extracción de características a partir de datos de SkillCorner Open Data.
+
+El proceso contempla información de:
+
+- Posiciones de jugadores y balón.
+- Identificación de equipo.
+- Detección de jugadores y balón.
+- Centroides y dispersión de los equipos.
+- Distancias y proximidad colectiva.
+- Etiquetas de posesión disponibles en los datos externos.
+
+El entrenamiento utiliza una muestra de un frame de cada cinco y separa los conjuntos de entrenamiento, validación y test por partidos completos.
+
+Esta separación permite evaluar la capacidad de generalización entre partidos distintos y evita que frames del mismo encuentro aparezcan simultáneamente en entrenamiento y evaluación.
+
+Se implementaron y compararon dos alternativas:
+
+- Regresión logística con ponderación de clases.
+- HistGradientBoostingClassifier.
+
+La selección del modelo se realiza atendiendo al Macro F1 obtenido en validación.
+
+Este componente proporciona probabilidades de posesión local y visitante que posteriormente se incorporan al sistema de fusión.
+
+**Procedencia:** SkillCorner Open Data, iniciativa de datos abiertos desarrollada conjuntamente por SkillCorner y PySport. La referencia exacta de la versión y los veinte identificadores de partidos utilizados deben acompañar a la publicación definitiva del proyecto.
+
+## 5. Sistema de fusión TECH-CIA V2
+
+La versión V2 combina tres bloques de señales:
+
+| Componente | Peso |
+|---|---:|
+| Probabilidades del modelo SkillCorner | 40 % |
+| Geometría relacional | 35 % |
+| Dinámica colectiva y temporal | 25 % |
+
+Las señales numéricas se normalizan mediante una transformación robusta basada en la mediana y la desviación absoluta mediana (MAD).
+
+Posteriormente se aplica una función de transformación no lineal para limitar la influencia de valores extremos.
+
+La fusión ponderada permite redistribuir el peso de los componentes disponibles cuando alguno no dispone de información suficiente.
+
+El resultado es un indicador continuo de ventaja de posesión.
+
+### Suavizado temporal
+
+Para reducir fluctuaciones entre frames consecutivos se utiliza una mediana móvil centrada de cinco frames.
+
+Este procedimiento ayuda a estabilizar la secuencia de predicciones sin sustituir el análisis frame a frame por una clasificación global del partido.
+
+### Reglas de clasificación
+
+La versión V2 utiliza un umbral de ±0,12:
+
+- `H`: señal superior a 0,12.
+- `A`: señal inferior a -0,12.
+- `D`: señal comprendida entre ambos umbrales, interpretada como disputa o ambigüedad.
+
+La categoría `X`, prevista por el formato de competición para situaciones de abstención, no se activa en la implementación V2 actual.
+
+## 6. Resultado de la entrega
+
+Se generó el archivo `Lenuta_Voda.csv` con una predicción por cada frame del partido.
+
+**Resumen del archivo:**
+
+| Característica | Resultado |
+|---|---:|
+| Total de filas | 199.319 |
+| Primer frame | 0 |
+| Último frame | 199.318 |
+| Columnas | `frame`, `label` |
+| Formato | CSV UTF-8 |
+| Índice adicional | No |
+
+### Distribución de etiquetas
+
+| Etiqueta | Frames |
+|---|---:|
+| H | 64.268 |
+| A | 55.960 |
+| D | 79.091 |
+| X | 0 |
+| **Total** | **199.319** |
+
+El archivo superó una validación estructural independiente que comprobó:
+
+- Encabezado requerido.
+- Número exacto de filas.
+- Secuencia completa y ordenada de frames.
+- Etiquetas permitidas.
+- Ausencia de celdas vacías.
+- Ausencia de columna de índice.
+- Codificación UTF-8.
+
+Esta comprobación acredita la estructura del archivo, no sustituye la evaluación oficial ni implica una puntuación de rendimiento deportivo.
+
+## 7. Integridad metodológica y uso de datos
+
+El desarrollo se ha basado en el procesamiento algorítmico de datos de tracking.
+
+No se han utilizado etiquetas de posesión creadas manualmente para el partido de competición como datos de entrenamiento.
+
+Las etiquetas utilizadas para entrenar el componente externo proceden de los datos de SkillCorner. Estos datos se emplean como fuente externa de aprendizaje y transferencia de patrones.
+
+El repositorio público separa el código de los datos originales y de los resultados derivados del partido. No se incluyen los archivos originales de tracking ni los conjuntos de características específicos del encuentro.
+
+## 8. Limitaciones y líneas de mejora
+
+La estimación de posesión a partir de tracking presenta dificultades inherentes al propio juego.
+
+Entre las situaciones especialmente complejas se encuentran:
+
+- Disputas y balones divididos.
+- Cambios rápidos de posesión.
+- Transiciones entre ataque y defensa.
+- Balones no detectados o jugadores parcialmente visibles.
+- Situaciones en las que la posición espacial no refleja necesariamente el control efectivo del balón.
+
+La metodología desarrollada busca reducir parte de esta incertidumbre mediante la combinación de señales independientes y la incorporación de contexto temporal.
+
+Como siguientes líneas de trabajo se identifican:
+
+1. Completar la integración del proceso de ejecución en un único punto de entrada.
+2. Documentar y fijar las dependencias del entorno.
+3. Precisar la versión y procedencia del conjunto externo utilizado.
+4. Facilitar la reproducción del proceso completo a partir de los datos autorizados.
+5. Explorar mecanismos específicos de abstención para situaciones de incertidumbre elevada.
+6. Evaluar futuras mejoras con datos de referencia independientes cuando estén disponibles y su uso esté permitido.
+
+Estas líneas representan oportunidades de evolución de una arquitectura que ya cuenta con módulos de extracción, análisis, entrenamiento, fusión y generación de predicciones.
+
+## 9. Conclusión
+
+TECH-CIA propone una aproximación a la estimación de posesión basada en la combinación de información espacial, dinámica colectiva y transferencia de conocimiento.
+
+El trabajo realizado abarca desde la exploración y construcción de características hasta la experimentación con modelos externos, la fusión estadística de señales y la generación de un archivo final con cobertura completa de frames.
+
+Uno de los principales aspectos del proyecto es el enfoque colectivo: la posesión se estudia no solo desde la proximidad de un jugador al balón, sino también desde la organización, la distribución y el movimiento relativo de ambos equipos.
+
+La arquitectura desarrollada constituye una base técnica para continuar investigando métodos de estimación de posesión más robustos, interpretables y adaptados a la naturaleza dinámica del fútbol.
+
+---
+
+## Referencias
+
+- SkillCorner Open Data: https://github.com/SkillCorner/opendata
+- Documentación de tracking de SkillCorner: https://github.com/SkillCorner/opendata/blob/master/README.md
+
+**TECH-CIA · More Than A Hack 2027 · Metrica Sports**
